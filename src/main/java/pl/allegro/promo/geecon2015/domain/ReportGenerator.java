@@ -26,7 +26,27 @@ public class ReportGenerator {
 
     public Report generate(ReportRequest request) {
         Report report = new Report();
-        return report;
+		return financialStatisticsRepository.listUsersWithMinimalIncome(request.getMinimalIncome(), request.getUsersToCheck())
+    		.stream().map(uuid -> {
+    			String userName = getUserName(uuid);
+    			BigDecimal transactionsSum = countTransactionsSum(transactionRepository.transactionsOf(uuid));
+    			return new ReportedUser(uuid, userName, transactionsSum);
+    		    
+    		}).forEach(u -> report.add(u));
     }
-    
+
+	private String getUserName(UUID uuid) {
+		try {
+			return userRepository.detailsOf(uuid).getName();
+		} catch(Exception e) {
+			return "<failed>";
+		}
+	}
+
+	private BigDecimal countTransactionsSum(UserTransactions userTransactions) {
+		return userTransactions.getTransactions(). .stream()
+                                         .map(UserTransaction::getAmount)
+                                         .reduce(BigDecimal.ZERO, BigDecimal::add);
+	}    
 }
+
